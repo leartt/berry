@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Board {
+  id          String       @id @default(cuid())
+  name        String
+  ownerId     String
+  color       String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  invitations Invitation[]
+  lists       List[]
+}
+
+model List {
+  id       String @id @default(cuid())
+  title    String
+  position Int
+  boardId  String
+  cards    Card[]
+  board    Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+}
+
+model Card {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  dueDate     DateTime?
+  position    Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  listId      String
+  list        List      @relation(fields: [listId], references: [id], onDelete: Cascade)
+  assignedTo  Member[]  @relation("CardToMember")
+}
+
+model Member {
+  id          String       @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String
+  username    String?
+  userId      String       @unique
+  invitations Invitation[]
+  cards       Card[]       @relation("CardToMember")
+}
+
+model Invitation {
+  id        String   @id @default(cuid())
+  status    Status   @default(pending)
+  boardId   String
+  memberId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  board     Board    @relation(fields: [boardId], references: [id])
+  member    Member   @relation(fields: [memberId], references: [id])
+
+  @@unique([boardId, memberId])
+}
+
+enum Status {
+  pending
+  accepted
+  rejected
+}
